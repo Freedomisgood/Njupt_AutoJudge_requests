@@ -14,7 +14,7 @@ headers= {
  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36',
  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3', 'Referer': 'http://jwxt.njupt.edu.cn/xs_jsmydpj.aspx?xkkh=(2019-2020-1)-B0502032S-ZDHY0001-1&xh=B17050322', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language':
  'zh-CN,zh;q=0.9,en;q=0.8',
- 'Cookie': '_ga=GA1.3.1265485040.1573983252; ASP.NET_SessionId=1pyeqm55tndohvqz3ceq2tvi; WEB=20111157', 'Connection': 'keep-alive'
+ 'Connection': 'keep-alive'
 }
 # data = {
 #   '__EVENTTARGET': '',
