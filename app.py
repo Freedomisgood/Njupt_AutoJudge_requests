@@ -300,13 +300,15 @@ class AutoJudge():
     def run(self):
         # 获得该学期所有课程
         courses = self.c.getcourses(account=self.account)
-        print(courses)
-        # 完成课程评价
-        self.c.run(courses)
-        print('---课程评价完成---')
-        # 完成老师评价
-        self.t.run(courses)
-        print('---教师评价完成---')
+        if courses:
+            # 完成课程评价
+            self.c.run(courses)
+            print('---课程评价完成---')
+            # # # 完成老师评价
+            self.t.run(courses)
+            print('---教师评价完成---')
+        else:
+            print("接口未开放or已经全部测评完！")
 
 
 if __name__ == '__main__':
