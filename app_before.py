@@ -5,13 +5,12 @@
 # @Cnblogs ：https://nymrli.top/
 import re
 import random
-import sys
+import requests
 from lxml import etree
 from njupt import Zhengfang
 from bs4 import BeautifulSoup
 from urllib.parse import parse_qs, urlencode
 from config import *
-from exceptions import NoinputException, CoursesException, TeachersException
 
 # headers = dict([line.split(":",1) for line in raw_headers.split("\n") if line])
 
@@ -22,14 +21,13 @@ proxy = {
 }
 
 
-class Course(Zhengfang):
+class Course():
     '''
     课程测评
     '''
-    def __init__(self, *args, **kwargs):
-        super(Course, self).__init__(*args, **kwargs)
-        self.account = kwargs.get('account')
-        self.gnmkdm = ''
+    def __init__(self, account, zf):
+        self.zf = zf
+        self.account = account
 
     # @staticmethod
     # def getcourses(account, cookies):
@@ -42,14 +40,11 @@ class Course(Zhengfang):
         # 首页
         index_url = 'http://jwxt.njupt.edu.cn/xs_main.aspx?xh={account}'.format(account=account)
         # html = getattr(requests, 'get')(url=index_url, headers=headers, cookies=cookies)
-        html = self.get(index_url)
-        content = etree.HTML(html.content)
+        html = self.zf.get(index_url)
+        content = etree.HTML(html.text)
         coursesList = []
-
-        for i, c in enumerate(content.xpath('//*[@id="headDiv"]/ul/li[4]/ul/li')):
+        for c in content.xpath('//*[@id="headDiv"]/ul/li[4]/ul/li'):
             class_url_suffix = c.xpath('a/@href')[0]
-            if i == 0:
-                self.gnmkdm = parse_qs(class_url_suffix).get('gnmkdm')[0]
             # 课程编号
             course_id = parse_qs(class_url_suffix).get('xsjxpj.aspx?xkkh')[0]
             coursesList.append(course_id)
@@ -68,14 +63,14 @@ class Course(Zhengfang):
             'pjxx': '',
             'Button1': '保  存',
         }
-        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}&gnmkdm={gnmkdm}'. \
-            format(classID=course_id, account=self.account, gnmkdm=self.gnmkdm )
-        view = self._get_viewstate(target_url)
+        target_url = 'http://jwxt.njupt.edu.cn/xs_jsmydpj.aspx?xkkh={classID}&xh={account}'. \
+            format(classID=course_id, account=self.account)
+        view = self.zf._get_viewstate(target_url)
         # 获得classID提交需要的首页__VIEWSTATE
         data['__VIEWSTATE'] = view
         # 指定需要获取课程的__VIEWSTATE
         data['pjkc'] = course_id
-        r = self.post(target_url, data=data)
+        r = self.zf.post(target_url, data=data)
         soup = BeautifulSoup(r.content, 'lxml')
         viewstate = soup.find('input', attrs={"name": "__VIEWSTATE"}).get("value")
         return viewstate
@@ -87,12 +82,12 @@ class Course(Zhengfang):
         :param data: 未编码的数据
         :return:
         '''
-        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}&gnmkdm={gnmkdm}'. \
-            format(classID=course_id, account=self.account, gnmkdm=self.gnmkdm )
+        target_url = 'http://jwxt.njupt.edu.cn/xs_jsmydpj.aspx?xkkh={classID}&xh={account}'. \
+            format(classID=course_id, account=self.account)
         data['Button1'] = '保  存'
         data_gb2312 = urlencode(data, encoding='gb2312')
-        # html = self.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
-        html = self.post(target_url, data=data_gb2312, headers=headers)
+        # html = self.zf.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
+        html = self.zf.post(target_url, data=data_gb2312, headers=headers)
         if html.status_code == 200:
             print("成功提交")
 
@@ -103,12 +98,12 @@ class Course(Zhengfang):
         :param data: 未编码的数据
         :return:
         '''
-        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}&gnmkdm={gnmkdm}'. \
-            format(classID=course_id, account=self.account, gnmkdm=self.gnmkdm )
+        target_url = 'http://jwxt.njupt.edu.cn/xs_jsmydpj.aspx?xkkh={classID}&xh={account}'. \
+            format(classID=course_id, account=self.account)
         data['Button2'] = '提  交'
         data_gb2312 = urlencode(data, encoding='gb2312')
-        # html = self.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
-        html = self.post(target_url, data=data_gb2312, headers=headers)
+        # html = self.zf.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
+        html = self.zf.post(target_url, data=data_gb2312, headers=headers)
         if html.status_code == 200:
             print("成功提交")
 
@@ -118,33 +113,26 @@ class Course(Zhengfang):
         :param course_id:
         :return:
         '''
-        course_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={stuID}'. \
+        course_url = 'http://jwxt.njupt.edu.cn/xs_jsmydpj.aspx?xkkh={classID}&xh={stuID}'. \
             format(classID=course_id, stuID=self.account)
         # 获取网页
-        html = self.get_soup(course_url)
-        # print(dir(self))
-        # html = self._url2soup(course_url)
-        option = html.find_all('select', attrs={'name': re.compile('DataGrid1:_ctl\d+:[Jj][Ss]\d+')})
+        html = self.zf.get_soup(course_url)
+        option = html.find_all('select', attrs={'id': re.compile('DataGrid1__ctl\d+_JS\d+')})
+        # print(option)
         if option:
             # 获得最后一个选项的id内容
-            title = option[-1].get('name')
+            title = option[-1].get('id')
             # 处理选项信息
-            lastinput = re.search('DataGrid1:_ctl(\d+):[Jj][Ss](\d+)', title)
+            lastinput = re.search('DataGrid1__ctl(\d+)_JS(\d+)', title)
             row, col = int(lastinput.group(1)), int(lastinput.group(2))
             data = {}
             if row and col:
                 for c in range(1, col+1): # 从1开始
-                    # lie = re.search('DataGrid1:_ctl(\d+):([Jj][Ss])(\d+)', title)
-                    lielast = html.find_all('select',
-                                    attrs={'name': re.compile('DataGrid1:_ctl\d+:[Jj][Ss]{col}'.
-                                                              format(col=c))})[-1].get('name')
-                    lie = re.search('DataGrid1:_ctl\d+:([Jj][Ss])\d+', lielast)
-                    for r in range(1, row+1): # 从2开始 --> 从1开始全部
+                    for r in range(2, row+1): # 从2开始
                         # data['DataGrid1:_ctl{rank}:JS1'.format(rank=rank)] = map_dict.get('完全认同')
-                        data['DataGrid1:_ctl{row}:{js}{col}'.format(row=r, col=c, js=lie.group(1))] = '完全认同'
+                        data['DataGrid1:_ctl{row}:JS{col}'.format(row=r, col=c)] = '完全认同'
                     # data['DataGrid1:_ctl{rank}:JS1'.format(rank=random.randint(2, biggest))] = map_dict.get('勉强认同')
-                    # data['DataGrid1:_ctl{row}:JS{col}'.format(row=random.randint(2, row), col=c)] = '勉强认同'
-                    data['DataGrid1:_ctl{row}:{js}{col}'.format(row=random.randint(2, row), col=c, js = lie.group(1))] = '勉强认同'
+                    data['DataGrid1:_ctl{row}:JS{col}'.format(row=random.randint(2, row), col=c)] = '勉强认同'
             else:
                 raise Exception('选项获取失败')
             return data
@@ -169,20 +157,18 @@ class Course(Zhengfang):
             # base['Button1'] = '保  存'
             # 合并数据
             postdata = dict(base, **grids_data)
-            # print(postdata)
             self.saveComment(c, postdata)
             if n == len(courses)-1:
                 self.commitComment(c, postdata)
 
 
-class Teacher(Zhengfang):
+class Teacher():
     '''
     教师测评
     '''
-    def __init__(self, *args, **kwargs):
-        super(Teacher, self).__init__(*args, **kwargs)
-        self.account = kwargs.get('account')
-        self.gnmkdm = ''
+    def __init__(self, account, zf):
+        self.zf = zf
+        self.account = account
 
     def getFirstVIEWSTATE(self, course_id):
         '''
@@ -197,14 +183,14 @@ class Teacher(Zhengfang):
             'pjxx': '',
             'Button1': '保  存',
         }
-        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}&gnmkdm={gnmkdm}'. \
-            format(classID=course_id, account=self.account, gnmkdm=self.gnmkdm )
-        view = self._get_viewstate(target_url)
+        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}'. \
+            format(classID=course_id, account=self.account)
+        view = self.zf._get_viewstate(target_url)
         # 获得classID提交需要的首页__VIEWSTATE
         data['__VIEWSTATE'] = view
         # 指定需要获取课程的__VIEWSTATE
         data['pjkc'] = course_id
-        r = self.post(target_url, data=data)
+        r = self.zf.post(target_url, data=data)
         soup = BeautifulSoup(r.content, 'lxml')
         viewstate = soup.find('input', attrs={"name": "__VIEWSTATE"}).get("value")
         return viewstate
@@ -215,36 +201,27 @@ class Teacher(Zhengfang):
         :param course_id:
         :return:
         '''
-        course_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={stuID}&gnmkdm={gnmkdm}'. \
-            format(classID=course_id, stuID=self.account, gnmkdm=self.gnmkdm )
+        course_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={stuID}'. \
+            format(classID=course_id, stuID=self.account)
         # 获取网页
-        html = self.get_soup(course_url)
-        # html = self._url2soup(course_url)
-        
+        html = self.zf.get_soup(course_url)
         # 找到最后一个选项
-        option = html.find_all('select', attrs={'name': re.compile('DataGrid1:_ctl\d+:[Jj][Ss]\d+')})
+        option = html.find_all('select', attrs={'id': re.compile('DataGrid1__ctl\d+_JS\d+')})
         if option:
             # 获得最后一个选项的id内容
-            title = option[-1].get('name')
+            title = option[-1].get('id')
             # 处理选项信息
-            lastinput = re.search('DataGrid1:_ctl(\d+):[Jj][Ss](\d+)', title)
+            lastinput = re.search('DataGrid1__ctl(\d+)_JS(\d+)', title)
             row, col = int(lastinput.group(1)), int(lastinput.group(2))
             data = {}
             if row and col:
-                # r->c, 列的数量少
-                for c in range(1, col + 1):  # 从1开始
-                    lielast = html.find_all('select',
-                                    attrs={'name': re.compile('DataGrid1:_ctl\d+:[Jj][Ss]{col}'.
-                                                              format(col=c))})[-1].get('name')
-                    lie = re.search('DataGrid1:_ctl\d+:([Jj][Ss])\d+', lielast)
-                    for r in range(1, row + 1):  # 从2开始
-                        # 多个确定该列js的样式
-                        data['DataGrid1:_ctl{row}:{js}{col}'.format(row=r, col=c, js = lie.group(1))] = '好'
-                        # data['DataGrid1:_ctl{row}:txtjs{col}'.format(row=r, col=c)] = ''
-                        # 只有JS会有大小写, txtjs全是小写
+                for c in range(1, col+1): # 从1开始
+                    for r in range(2, row+1): # 从2开始
+                        data['DataGrid1:_ctl{row}:JS{col}'.format(row=r, col=c)] = '好'
                         data['DataGrid1:_ctl{row}:txtjs{col}'.format(row=r, col=c)] = ''
-                    randOption = random.randint(1, row)
-                    data['DataGrid1:_ctl{row}:{js}{col}'.format(row=randOption, col=c, js = lie.group(1))] = '较好'
+                    randOption = random.randint(2, row)
+                    data['DataGrid1:_ctl{row}:JS{col}'.format(row=randOption, col=c)] = '较好'
+                    data['DataGrid1:_ctl{row}:txtjs{col}'.format(row=randOption, col=c)] = ''
             else:
                 raise Exception('选项获取失败')
             return data
@@ -257,14 +234,14 @@ class Teacher(Zhengfang):
         :param data: 未编码的数据
         :return:
         '''
-        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}&gnmkdm={gnmkdm}'. \
-            format(classID=course_id, account=self.account, gnmkdm=self.gnmkdm )
+        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}'. \
+            format(classID=course_id, account=self.account)
         data['Button1'] = '保  存'
         data['txt1'] = ''
         data['TextBox1'] = '0'
         data_gb2312 = urlencode(data, encoding='gb2312')
-        # html = self.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
-        html = self.post(target_url, data=data_gb2312, headers=headers)
+        # html = self.zf.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
+        html = self.zf.post(target_url, data=data_gb2312, headers=headers)
         if html.status_code == 200:
             print("成功提交")
 
@@ -275,14 +252,14 @@ class Teacher(Zhengfang):
         :param data: 未编码的数据
         :return:
         '''
-        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}&gnmkdm={gnmkdm}'. \
-            format(classID=course_id, account=self.account, gnmkdm=self.gnmkdm )
+        target_url = 'http://jwxt.njupt.edu.cn/xsjxpj.aspx?xkkh={classID}&xh={account}'. \
+            format(classID=course_id, account=self.account)
         data['Button2'] = '提  交'
         data['txt1'] = ''
         data['TextBox1'] = '0'
         data_gb2312 = urlencode(data, encoding='gb2312')
-        # html = self.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
-        html = self.post(target_url, data=data_gb2312, headers=headers)
+        # html = self.zf.post(target_url, data=data_gb2312, proxies=proxy, headers=headers)
+        html = self.zf.post(target_url, data=data_gb2312, headers=headers)
         if html.status_code == 200:
             print("成功提交")
 
@@ -308,45 +285,29 @@ class Teacher(Zhengfang):
                 self.commitComment(c, postdata)
 
 
-class AutoJudge():
-    def __init__(self, account=None, password=None):
-        if account and password:
-            self.account = account
-            self.c = Course(account=account, password=password)
-            self.t = Teacher(account=account, password=password)
+class AutoJudge(Zhengfang):
+    def __init__(self, *args, **kwargs):
+        super(AutoJudge, self).__init__(*args, **kwargs)
+        if self.account:
+            self.account = kwargs.get('account')
+            self.c = Course(account=self.account, zf=self)
+            self.t = Teacher(account=self.account, zf=self)
         else:
-            raise NoinputException()
-            # raise Exception("请输入账号密码")
+            raise Exception("请输入账号密码")
 
     def run(self):
         # 获得该学期所有课程
-        try:
-            courses = self.c.getcourses(account=self.account)
-        except Exception as e:
-            print(e)
-            return -1
+        # courses = Course.getcourses(account=self.account, cookies=self.cookies)
+        courses = self.c.getcourses(account=self.account)
         if courses:
             # 完成课程评价
-            # print(courses)
-            try:
-                self.c.run(courses)
-            except AttributeError as e:
-                sys.stderr.write("CoursesException-AttributeError: 'NoneType' object has no attribute 'get'")
-                raise CoursesException()
-            else:
-                print('---课程评价完成---')
-            # 完成老师评价
-            try:
-                self.t.run(courses)
-            except AttributeError as e:
-                sys.stderr.write("TeachersException-AttributeError: 'NoneType' object has no attribute 'get'")
-                raise TeachersException()
-            else:
-                print('---教师评价完成---')
-            return 0
+            self.c.run(courses)
+            print('---课程评价完成---')
+            # # # 完成老师评价
+            self.t.run(courses)
+            print('---教师评价完成---')
         else:
             print("接口未开放or已经全部测评完！")
-            return -1
 
 
 if __name__ == '__main__':
