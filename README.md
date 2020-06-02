@@ -1,4 +1,7 @@
-# Njupt_AutoJudge_requests
+
+<h1 align="center">- Njupt_AutoJudge_requests -</h1>
+
+
 
 🔨   分分钟解决测评 
 
@@ -6,19 +9,19 @@
 
 #### 安装依赖库
 
-```
+```shell
 $ pip3 install -r requirements.txt
 ```
 
 #### 如何使用
 
-```
+```shell
 $ python app.py
 ```
 
 接着，输入正方账号、密码即可
 
-
+---
 
 ## 6.2 **记录几处改动**:
 
@@ -33,11 +36,15 @@ njupt                 0.1.3
 
 区别为:
 
-- 0.2.3 使用`get_soup`
-- 0.1.3使用`_url2soup`
+- 0.2.3: Zhengfang使用`get_soup`
+- 0.1.3: Zhengfang使用`_url2soup`
 
-### 2.增加了`gnmkdm`字段
+### 2.URL中增加了`gnmkdm`字段
 
 ### 3.增加考虑的JS大小写的情况(多于2名老师时)
 
-### 4.`http://jwxt.njupt.edu.cn/xs_jsmydpj.aspx?`修改为`http://jwxt.njupt.edu.cn/xsjxpj.aspx?`
+增加了正则匹配的选项
+
+### 4.提交URL的改动
+
+从`http://jwxt.njupt.edu.cn/xs_jsmydpj.aspx?`修改为`http://jwxt.njupt.edu.cn/xsjxpj.aspx?`
