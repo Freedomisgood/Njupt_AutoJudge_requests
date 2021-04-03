@@ -3,7 +3,7 @@
 
 
 
-🔨   分分钟解决测评 
+🔨   分分钟解决测评， 体验网站：http://njupt.nymrli.top:8080/
 
 ▲.需要Python环境
 
